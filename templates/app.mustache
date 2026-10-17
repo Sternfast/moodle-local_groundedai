@@ -1,0 +1,87 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_groundedai/app
+
+    The chat shell: a conversation sidebar and a message column.
+
+    Context variables required for this template:
+    * (none)
+
+    Example context (json):
+    {}
+}}
+<div class="gai-app">
+    <div class="sr-only" data-region="gai-announce" aria-live="polite"></div>
+    <aside class="gai-sidebar" aria-label="{{#str}}conversations, local_groundedai{{/str}}">
+        <div class="gai-sidebar-head">
+            <div class="gai-sidebar-top">
+                <button type="button" class="btn btn-primary btn-sm gai-newchat" data-action="newchat">
+                    {{#str}}newchat, local_groundedai{{/str}}
+                </button>
+                <button type="button" class="gai-collapse-btn" data-action="gai-collapse"
+                        aria-label="{{#str}}collapsesidebar, local_groundedai{{/str}}"
+                        title="{{#str}}collapsesidebar, local_groundedai{{/str}}">
+                    <span aria-hidden="true">&laquo;</span>
+                </button>
+            </div>
+            <div class="gai-tabs" role="tablist" aria-label="{{#str}}conversations, local_groundedai{{/str}}">
+                <button type="button" class="gai-tab active" data-action="view" data-view="chats"
+                        role="tab" aria-selected="true">{{#str}}chatstab, local_groundedai{{/str}}</button>
+                <button type="button" class="gai-tab" data-action="view" data-view="archived"
+                        role="tab" aria-selected="false">{{#str}}archivedtab, local_groundedai{{/str}}</button>
+            </div>
+        </div>
+        <div class="gai-list" data-region="gai-list"></div>
+    </aside>
+    <section class="gai-main">
+        <button type="button" class="gai-expand-btn" data-action="gai-expand"
+                aria-label="{{#str}}showconversations, local_groundedai{{/str}}"
+                title="{{#str}}showconversations, local_groundedai{{/str}}">
+            <span aria-hidden="true">&raquo;</span>
+        </button>
+        <div class="gai-panel" data-region="gai-panel" role="log" aria-live="polite" aria-atomic="false" tabindex="0"></div>
+        <form class="gai-composer" data-region="gai-composer">
+            {{#canupload}}
+            <div class="gai-attachments" data-region="gai-attachments"
+                 aria-label="{{#str}}domainupload, local_groundedai{{/str}}"></div>
+            {{/canupload}}
+            <div class="gai-inputbox">
+                <textarea class="gai-input" rows="1" data-region="gai-input"
+                          placeholder="{{#str}}messageplaceholder, local_groundedai{{/str}}"
+                          aria-label="{{#str}}messageplaceholder, local_groundedai{{/str}}"></textarea>
+                <div class="gai-composer-bar">
+                    {{#canupload}}
+                    <button type="button" class="gai-attach-btn" data-action="gai-attach"
+                            aria-label="{{#str}}attachfile, local_groundedai{{/str}}"
+                            title="{{#str}}attachfile, local_groundedai{{/str}}">
+                        <span aria-hidden="true">&plus;</span>
+                    </button>
+                    <input type="file" class="gai-fileinput" data-region="gai-fileinput" hidden
+                           accept=".txt,.text,.csv,.md,.log,.xlsx,.docx,.pptx,.pdf,.zip">
+                    {{/canupload}}
+                    <span class="gai-bar-spacer"></span>
+                    <button type="submit" class="gai-send" data-action="send"
+                            aria-label="{{#str}}send, local_groundedai{{/str}}" title="{{#str}}send, local_groundedai{{/str}}">
+                        <span class="gai-send-icon" data-region="gai-send-icon" aria-hidden="true">&uarr;</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+        <p class="gai-disclaimer">{{#str}}aidisclaimer, local_groundedai{{/str}}</p>
+    </section>
+</div>

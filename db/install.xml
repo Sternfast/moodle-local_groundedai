@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/groundedai/db" VERSION="20261016" COMMENT="Grounded AI chat tables.">
+  <TABLES>
+    <TABLE NAME="local_groundedai_conversations" COMMENT="A chat conversation owned by one user in one context.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="lane" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="archived" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userlanecontextarchived" UNIQUE="false" FIELDS="userid, lane, contextid, archived"/>
+        <INDEX NAME="timemodified" UNIQUE="false" FIELDS="timemodified"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_groundedai_grants" COMMENT="Access grants for the staff assistant: one row per role or user, with course scope and expiry.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="granteetype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="role or user."/>
+        <FIELD NAME="roleid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Granted role when granteetype=role; 0 otherwise."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Granted user when granteetype=user; 0 otherwise."/>
+        <FIELD NAME="coursescope" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="all" SEQUENCE="false" COMMENT="all, enrolled or course."/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Specific course when coursescope=course; 0 otherwise."/>
+        <FIELD NAME="domains" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="CSV of data domains this grant enables."/>
+        <FIELD NAME="features" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="CSV of sensitive features this grant enables (email, upload, export)."/>
+        <FIELD NAME="expiry" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Unix time the grant expires; 0 = never."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Admin who created or last edited the grant."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="roleid" UNIQUE="false" FIELDS="roleid"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_groundedai_messages" COMMENT="One message in a conversation.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="conversationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="role" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="metadata" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="conversationid" TYPE="foreign" FIELDS="conversationid" REFTABLE="local_groundedai_conversations" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="conversationidtimecreated" UNIQUE="false" FIELDS="conversationid, timecreated"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_groundedai_attach" COMMENT="An uploaded file attached to a conversation and its extracted text.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="conversationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="fileid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="contenthash" TYPE="char" LENGTH="40" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="mimetype" TYPE="char" LENGTH="128" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Detected kind: txt/xlsx/docx/pptx/pdf/zip."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending/done/failed/noext/notextlayer/rejected."/>
+        <FIELD NAME="chars" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Extracted UTF-8 plain text."/>
+        <FIELD NAME="error" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="conversationid" TYPE="foreign" FIELDS="conversationid" REFTABLE="local_groundedai_conversations" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="fileid" UNIQUE="true" FIELDS="fileid"/>
+        <INDEX NAME="contenthash" UNIQUE="false" FIELDS="contenthash"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

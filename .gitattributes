@@ -1,0 +1,3 @@
+# Dev-only harnesses and seeders must not ship in a release package.
+cli/ export-ignore
+.gitattributes export-ignore

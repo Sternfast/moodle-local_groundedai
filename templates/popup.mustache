@@ -1,0 +1,53 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_groundedai/popup
+
+    The staff floating popup shell: a non-modal dialog that overlays the course page.
+
+    Context variables required for this template:
+    * title string The accessible name shown in the header.
+
+    Example context (json):
+    {
+        "title": "AI Teacher Assistant"
+    }
+}}
+<div class="gai-popup gai-window" role="dialog" aria-label="{{title}}">
+    <div class="gai-resize gai-resize-l" data-resize="x" aria-hidden="true"></div>
+    <div class="gai-resize gai-resize-t" data-resize="y" aria-hidden="true"></div>
+    <div class="gai-popup-head" data-region="gai-drag">
+        <span class="gai-popup-title">{{title}}</span>
+        <div class="gai-popup-controls">
+            <div class="gai-layout" data-region="gai-layout">
+                <button type="button" class="gai-ctl" data-action="gai-layout-toggle"
+                        aria-haspopup="menu" aria-expanded="false"
+                        aria-label="{{#str}}layoutmode, local_groundedai{{/str}}" title="{{#str}}layoutmode, local_groundedai{{/str}}">&#9707;</button>
+                <div class="gai-layout-menu" data-region="gai-layout-menu" role="menu" hidden>
+                    <button type="button" class="gai-layout-item" role="menuitemradio" data-action="gai-mode" data-mode="dockright">{{#str}}dockmode, local_groundedai{{/str}}</button>
+                    <button type="button" class="gai-layout-item" role="menuitemradio" data-action="gai-mode" data-mode="window">{{#str}}windowmode, local_groundedai{{/str}}</button>
+                    <button type="button" class="gai-layout-item" role="menuitemradio" data-action="gai-mode" data-mode="openfull">{{#str}}fullmode, local_groundedai{{/str}}</button>
+                </div>
+            </div>
+            <button type="button" class="gai-ctl" data-action="gai-min"
+                    aria-label="{{#str}}minimise, local_groundedai{{/str}}" title="{{#str}}minimise, local_groundedai{{/str}}">&#8211;</button>
+            <button type="button" class="gai-ctl" data-action="gai-close"
+                    aria-label="{{#str}}closechat, local_groundedai{{/str}}" title="{{#str}}closechat, local_groundedai{{/str}}">&#10005;</button>
+        </div>
+    </div>
+    <div class="gai-popup-body" data-region="gai-appmount"></div>
+</div>

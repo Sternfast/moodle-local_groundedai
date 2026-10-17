@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<libraries>
+  <library>
+    <location>thirdparty/pdfparser</location>
+    <name>PdfParser</name>
+    <description>Pure-PHP PDF text extractor. Used as the always-available fallback for reading uploaded PDFs when the optional pdftotext binary is not configured.</description>
+    <version>2.12.5</version>
+    <license>LGPL-3.0</license>
+    <licenseversion>3.0</licenseversion>
+    <repository>https://github.com/smalot/pdfparser</repository>
+  </library>
+</libraries>
