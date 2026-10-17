@@ -45,6 +45,7 @@ class get_messages extends external_api {
             'conversationid' => new external_value(PARAM_INT, 'conversation id'),
             'before'         => new external_value(PARAM_INT, 'return messages with id < this; 0 = latest', VALUE_DEFAULT, 0),
             'limit'          => new external_value(PARAM_INT, 'page size', VALUE_DEFAULT, 30),
+            'after'          => new external_value(PARAM_INT, 'refresh: return messages with id > this; 0 = off', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -54,19 +55,26 @@ class get_messages extends external_api {
      * @param int $conversationid Conversation id.
      * @param int $before Cursor.
      * @param int $limit Page size.
+     * @param int $after Refresh cursor: messages with id greater than this (0 = off).
      * @return array
      */
-    public static function execute(int $conversationid, int $before, int $limit): array {
+    public static function execute(int $conversationid, int $before, int $limit, int $after = 0): array {
         global $USER;
         $params = self::validate_parameters(
             self::execute_parameters(),
-            ['conversationid' => $conversationid, 'before' => $before, 'limit' => $limit]
+            ['conversationid' => $conversationid, 'before' => $before, 'limit' => $limit, 'after' => $after]
         );
         $context = conversation::context_for($params['conversationid']);
         self::validate_context($context);
         // Honour the master switch / access revocation on reads too, not just on create/send.
         conversation::require_access($context);
-        return conversation::get_messages($params['conversationid'], $USER->id, $params['before'], $params['limit']);
+        return conversation::get_messages(
+            $params['conversationid'],
+            $USER->id,
+            $params['before'],
+            $params['limit'],
+            $params['after']
+        );
     }
 
     /**

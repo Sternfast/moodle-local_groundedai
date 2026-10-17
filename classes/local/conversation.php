@@ -186,11 +186,26 @@ class conversation {
      * @param int $userid Acting user.
      * @param int $before Return messages with id < this (0 = latest page).
      * @param int $limit Page size.
+     * @param int $after Refresh mode: return messages with id > this, oldest-first (0 = off). Used to
+     *                   pull in turns another open view of this conversation has added, without a reload.
      * @return array {messages: array, hasmore: bool}
      */
-    public static function get_messages(int $conversationid, int $userid, int $before = 0, int $limit = 30): array {
+    public static function get_messages(int $conversationid, int $userid, int $before = 0, int $limit = 30, int $after = 0): array {
         global $DB;
         $conv = self::owned($conversationid, $userid);
+        if ($after > 0) {
+            $records = $DB->get_records_select(
+                'local_groundedai_messages',
+                'conversationid = :cid AND id > :after',
+                ['cid' => $conversationid, 'after' => $after],
+                'id ASC',
+                'id, role, content, metadata, timecreated',
+                0,
+                $limit
+            );
+            $context = \context::instance_by_id($conv->contextid);
+            return ['messages' => self::with_html(array_values($records), $context), 'hasmore' => false];
+        }
         $params = ['cid' => $conversationid];
         $where = 'conversationid = :cid';
         if ($before > 0) {
@@ -492,7 +507,7 @@ class conversation {
         $history = self::history_for_model($conversationid, $usermsgid);
 
         $res = staff_assistant::answer($courseid, $userid, $text, $conversationid, $history, $cmid);
-        self::add_message(
+        $assistantmsgid = self::add_message(
             $conversationid,
             'assistant',
             $res['answer'],
@@ -510,13 +525,15 @@ class conversation {
         }
         $DB->set_field('local_groundedai_conversations', 'timemodified', time(), ['id' => $conversationid]);
 
-        // Scope the re-read to THIS conversation. $usermsgid is a global sequence, and the LLM round-trip
-        // above means other conversations can insert rows with a higher id meanwhile — without the
-        // conversationid predicate those would be returned to, and rendered for, the wrong user.
+        // Return exactly this turn's two rows (the question and its reply) by id. The LLM round-trip above
+        // takes seconds, so a concurrent send into the SAME conversation from another tab/view can insert
+        // its own rows between these two ids; selecting the two known ids (rather than "id >= user") keeps
+        // each view showing only its own turn. A separate "refresh since last id" pass pulls the other
+        // view's turns in correct order.
         $new = $DB->get_records_select(
             'local_groundedai_messages',
-            'conversationid = :cid AND id >= :u',
-            ['cid' => $conversationid, 'u' => $usermsgid],
+            'conversationid = :cid AND id IN (:u, :a)',
+            ['cid' => $conversationid, 'u' => $usermsgid, 'a' => $assistantmsgid],
             'id ASC',
             'id, role, content, metadata, timecreated'
         );

@@ -171,6 +171,9 @@ $string['noprovider'] = 'No model provider is configured. Set the API base URL i
 $string['nomodel'] = 'No model is configured for this tier. Set it in the plugin settings.';
 $string['requestfailed'] = 'The model request failed: {$a}';
 $string['assistantunavailable'] = 'The assistant service could not be reached just now. Please try again shortly, or ask an administrator to check the connection.';
+$string['sessionexpired'] = 'Session expired';
+$string['sessionexpired_body'] = 'Your Moodle session has expired, so the assistant could not complete that. Reload the page to continue (your earlier messages are saved).';
+$string['sessionexpired_reload'] = 'Reload';
 
 // Privacy.
 $string['privacy:metadata:conversations'] = 'Chat conversations a user has with the assistant.';

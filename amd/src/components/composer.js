@@ -24,6 +24,7 @@
 import {BaseComponent} from 'core/reactive';
 import {getString, getStrings} from 'core/str';
 import Notification from 'core/notification';
+import {isSessionError} from 'local_groundedai/repository';
 
 const ICON_SEND = '↑';   // Up arrow: "send".
 const ICON_STOP = '■';   // Filled square: "stop generating".
@@ -121,9 +122,16 @@ export default class extends BaseComponent {
         try {
             await this.reactive.dispatch('sendMessage', text);
         } catch (error) {
+            // Restore the drafted text, re-enable Send (the sending flag flips it off), and surface the
+            // failure. A session error is already handled by the repository's reload prompt, so skip the
+            // extra modal for that case.
             if (!input.value) {
                 input.value = text;
                 this._autogrow();
+            }
+            this._updateSendButton();
+            if (!isSessionError(error)) {
+                Notification.exception(error);
             }
         }
     }

@@ -36,6 +36,8 @@ export default class extends BaseComponent {
     create() {
         this.name = 'local_groundedai_panel';
         this._oldestId = 0;
+        this._newestId = 0;
+        this._refreshing = false;
         this._announce = false;
         this._loadingOlder = false;
         this._typer = null;
@@ -51,6 +53,13 @@ export default class extends BaseComponent {
             if (e.target.closest('[data-action="gai-loadmore"]')) {
                 e.preventDefault();
                 this._loadOlder();
+            }
+        });
+        // When this tab/view is brought back to the foreground, pull in any turns another open view of the
+        // same conversation added while we were hidden (same-chat-in-two-places consistency).
+        this.addEventListener(document, 'visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                this._refreshNew();
             }
         });
         await this._render();
@@ -90,6 +99,40 @@ export default class extends BaseComponent {
     }
 
     /**
+     * Append any turns added to the open conversation by another view since this one last rendered. Uses
+     * the get_messages "after" cursor; silent on failure (a background refresh must not nag). Skipped while
+     * a send is in flight here, since that reply arrives through _onReplyArrived.
+     */
+    async _refreshNew() {
+        const id = parseInt(this.reactive.state.config.currentConversationId, 10);
+        if (!id || !this._newestId || this._refreshing || this.reactive.state.config.sending) {
+            return;
+        }
+        this._refreshing = true;
+        let page;
+        try {
+            page = await Repository.getMessages(id, 0, 50, this._newestId);
+        } catch (error) {
+            this._refreshing = false;
+            return;
+        }
+        this._refreshing = false;
+        const fresh = (page.messages || []).filter((m) => parseInt(m.id, 10) > this._newestId);
+        if (!fresh.length) {
+            return;
+        }
+        const [you, assistant] = await getStrings([
+            {key: 'youlabel', component: 'local_groundedai'},
+            {key: 'assistantlabel', component: 'local_groundedai'},
+        ]);
+        for (const m of fresh) {
+            await this._appendStatic(this._shape(m, you, assistant));
+        }
+        this._newestId = parseInt(fresh[fresh.length - 1].id, 10);
+        this._scrollToBottom();
+    }
+
+    /**
      * Render the open conversation's messages.
      */
     async _render() {
@@ -118,6 +161,7 @@ export default class extends BaseComponent {
         Templates.replaceNodeContents(this.element, html, js);
         this._applyFilters(this.element);
         this._oldestId = messages.length ? parseInt(page.messages[0].id, 10) : 0;
+        this._newestId = messages.length ? parseInt(page.messages[page.messages.length - 1].id, 10) : 0;
         this._scrollToBottom();
         if (this._announce) {
             this._announce = false;
@@ -345,6 +389,10 @@ export default class extends BaseComponent {
             } else if (!hadpending) {
                 await this._appendStatic(shaped);
             }
+        }
+        const ids = msgs.map((m) => parseInt(m.id, 10)).filter((n) => n > 0);
+        if (ids.length) {
+            this._newestId = Math.max(this._newestId, ...ids);
         }
         const replies = msgs.filter((m) => m.role === 'assistant');
         const last = replies.length ? replies[replies.length - 1] : null;

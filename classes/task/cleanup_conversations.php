@@ -44,6 +44,12 @@ class cleanup_conversations extends \core\task\scheduled_task {
      */
     public function execute() {
         global $DB;
+
+        // Always sweep abandoned, message-less "New chat" rows (older than an hour, so an in-progress one
+        // is never removed). The UI can persist an empty conversation when the panel is opened, so without
+        // this they accumulate in the list. Runs regardless of the retention setting below.
+        $this->sweep_empty_conversations();
+
         $days = (int) get_config('local_groundedai', 'retentiondays');
         if ($days <= 0) {
             return;
@@ -76,5 +82,35 @@ class cleanup_conversations extends \core\task\scheduled_task {
             }
         } while (count($old) === $batch);
         mtrace('local_groundedai cleanup: deleted ' . $deleted . ' conversations older than ' . $days . ' days');
+    }
+
+    /**
+     * Delete conversations that have no messages and are older than an hour — abandoned "New chat" rows
+     * the UI persisted on open. Owner-routed delete() so any orphaned attachment files go too.
+     */
+    protected function sweep_empty_conversations(): void {
+        global $DB;
+        $empties = $DB->get_records_sql(
+            "SELECT c.id, c.userid
+               FROM {local_groundedai_conversations} c
+              WHERE c.timemodified < :cutoff
+                AND NOT EXISTS (
+                    SELECT 1 FROM {local_groundedai_messages} m WHERE m.conversationid = c.id)",
+            ['cutoff' => time() - HOURSECS],
+            0,
+            1000
+        );
+        $removed = 0;
+        foreach ($empties as $conv) {
+            try {
+                conversation::delete((int) $conv->id, (int) $conv->userid);
+                $removed++;
+            } catch (\Throwable $e) {
+                mtrace('local_groundedai cleanup: empty conversation ' . $conv->id . ' failed: ' . $e->getMessage());
+            }
+        }
+        if ($removed) {
+            mtrace('local_groundedai cleanup: removed ' . $removed . ' empty conversations');
+        }
     }
 }

@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_groundedai';
-$plugin->version   = 2026101701;        // YYYYMMDDXX.
+$plugin->version   = 2026101702;        // YYYYMMDDXX.
 $plugin->requires  = 2024100700;        // Moodle 4.5.0 — the AI subsystem + typed hooks floor.
 $plugin->supported = [405, 503];        // Moodle 4.5 to 5.3.
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.2.2';           // LLM/RAG hardening: block image-exfil output, https endpoints, rate limit.
+$plugin->release   = '1.2.3';           // Chat continuity: session-expiry recovery, multi-view sync, empty-chat sweep.

@@ -38,6 +38,7 @@ const MIN_W = 300;
 const MIN_H = 300;
 
 let panel = null;
+let mounting = null;
 let activeMode = 'dockright';
 
 /**
@@ -271,8 +272,18 @@ export const initStaff = (cfg) => {
         return;
     }
     launcher.addEventListener('click', async () => {
-        if (!panel) {
-            await mount(cfg);
+        // Guard re-entry: `panel` is only set after an await inside mount(), so a fast double-click could
+        // otherwise build the popup (and auto-create a conversation) twice. Hold the in-flight mount.
+        if (!panel && !mounting) {
+            mounting = mount(cfg);
+            try {
+                await mounting;
+            } finally {
+                mounting = null;
+            }
+            show();
+        } else if (mounting) {
+            await mounting;
             show();
         } else if (panel.classList.contains('gai-hidden')) {
             show();

@@ -23,6 +23,54 @@
 
 import {call as fetchMany} from 'core/ajax';
 import Config from 'core/config';
+import Notification from 'core/notification';
+import {get_string as getString} from 'core/str';
+
+// Error codes core returns when the Moodle session / sesskey is no longer valid (the "~1 hour" case).
+const SESSION_CODES = ['servicerequireslogin', 'invalidsesskey', 'sessionerroruser', 'requireloginerror'];
+let sessionPromptShown = false;
+
+/**
+ * Is this a session/sesskey failure (as opposed to an ordinary application error)?
+ *
+ * @param {Object} error The rejection from core/ajax.
+ * @returns {Boolean}
+ */
+export const isSessionError = (error) => {
+    if (!error) {
+        return false;
+    }
+    const code = error.errorcode || (error.error && error.error.errorcode) || '';
+    return SESSION_CODES.indexOf(code) !== -1;
+};
+
+/**
+ * Wrap a web-service promise so a session/sesskey failure surfaces a single "session expired — reload"
+ * prompt instead of a silent, dead UI. Any other error is re-thrown for the caller's own handling. Writes
+ * are never auto-retried (a duplicate could double-post), so this only classifies and prompts.
+ *
+ * @param {Promise} promise A core/ajax call promise.
+ * @returns {Promise}
+ */
+const guard = (promise) => promise.catch((error) => {
+    if (isSessionError(error) && !sessionPromptShown) {
+        sessionPromptShown = true;
+        Promise.all([
+            getString('sessionexpired', 'local_groundedai'),
+            getString('sessionexpired_body', 'local_groundedai'),
+            getString('sessionexpired_reload', 'local_groundedai'),
+            getString('cancel', 'core'),
+        ]).then(([title, body, yes, no]) => {
+            Notification.confirm(title, body, yes, no, () => window.location.reload());
+            return;
+        }).catch(() => {
+            if (window.confirm('Your session has expired. Reload the page to continue?')) {
+                window.location.reload();
+            }
+        });
+    }
+    throw error;
+});
 
 /**
  * List conversations.
@@ -33,7 +81,7 @@ import Config from 'core/config';
  * @returns {Promise}
  */
 export const getConversations = (lane, contextid, archived) =>
-    fetchMany([{methodname: 'local_groundedai_get_conversations', args: {lane, contextid, archived}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_get_conversations', args: {lane, contextid, archived}}])[0]);
 
 /**
  * Create a conversation.
@@ -43,7 +91,7 @@ export const getConversations = (lane, contextid, archived) =>
  * @returns {Promise}
  */
 export const createConversation = (lane, contextid) =>
-    fetchMany([{methodname: 'local_groundedai_create_conversation', args: {lane, contextid}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_create_conversation', args: {lane, contextid}}])[0]);
 
 /**
  * Rename a conversation.
@@ -53,7 +101,7 @@ export const createConversation = (lane, contextid) =>
  * @returns {Promise}
  */
 export const renameConversation = (id, name) =>
-    fetchMany([{methodname: 'local_groundedai_rename_conversation', args: {id, name}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_rename_conversation', args: {id, name}}])[0]);
 
 /**
  * Archive or unarchive a conversation.
@@ -63,7 +111,7 @@ export const renameConversation = (id, name) =>
  * @returns {Promise}
  */
 export const archiveConversation = (id, archived) =>
-    fetchMany([{methodname: 'local_groundedai_archive_conversation', args: {id, archived}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_archive_conversation', args: {id, archived}}])[0]);
 
 /**
  * Delete a conversation.
@@ -72,7 +120,7 @@ export const archiveConversation = (id, archived) =>
  * @returns {Promise}
  */
 export const deleteConversation = (id) =>
-    fetchMany([{methodname: 'local_groundedai_delete_conversation', args: {id}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_delete_conversation', args: {id}}])[0]);
 
 /**
  * Fetch a page of messages.
@@ -80,10 +128,11 @@ export const deleteConversation = (id) =>
  * @param {Number} conversationid Conversation id.
  * @param {Number} before Cursor.
  * @param {Number} limit Page size.
+ * @param {Number} after Refresh cursor: messages with id greater than this (0 = off).
  * @returns {Promise}
  */
-export const getMessages = (conversationid, before, limit) =>
-    fetchMany([{methodname: 'local_groundedai_get_messages', args: {conversationid, before, limit}}])[0];
+export const getMessages = (conversationid, before, limit, after = 0) =>
+    guard(fetchMany([{methodname: 'local_groundedai_get_messages', args: {conversationid, before, limit, after}}])[0]);
 
 /**
  * Send a message.
@@ -95,7 +144,7 @@ export const getMessages = (conversationid, before, limit) =>
  * @returns {Promise}
  */
 export const sendMessage = (conversationid, text, cmid = 0, pagetype = '') =>
-    fetchMany([{methodname: 'local_groundedai_send_message', args: {conversationid, text, cmid, pagetype}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_send_message', args: {conversationid, text, cmid, pagetype}}])[0]);
 
 /**
  * List a conversation's attachments.
@@ -104,7 +153,7 @@ export const sendMessage = (conversationid, text, cmid = 0, pagetype = '') =>
  * @returns {Promise}
  */
 export const getAttachments = (conversationid) =>
-    fetchMany([{methodname: 'local_groundedai_get_attachments', args: {conversationid}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_get_attachments', args: {conversationid}}])[0]);
 
 /**
  * Allocate a fresh draft area for one upload.
@@ -113,7 +162,7 @@ export const getAttachments = (conversationid) =>
  * @returns {Promise}
  */
 export const prepareUpload = (conversationid) =>
-    fetchMany([{methodname: 'local_groundedai_prepare_upload', args: {conversationid}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_prepare_upload', args: {conversationid}}])[0]);
 
 /**
  * Attach an already-uploaded draft file to a conversation.
@@ -123,7 +172,7 @@ export const prepareUpload = (conversationid) =>
  * @returns {Promise}
  */
 export const uploadFile = (conversationid, draftitemid) =>
-    fetchMany([{methodname: 'local_groundedai_upload_file', args: {conversationid, draftitemid}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_upload_file', args: {conversationid, draftitemid}}])[0]);
 
 /**
  * Remove an attachment.
@@ -133,7 +182,7 @@ export const uploadFile = (conversationid, draftitemid) =>
  * @returns {Promise}
  */
 export const deleteAttachment = (conversationid, attachmentid) =>
-    fetchMany([{methodname: 'local_groundedai_delete_attachment', args: {conversationid, attachmentid}}])[0];
+    guard(fetchMany([{methodname: 'local_groundedai_delete_attachment', args: {conversationid, attachmentid}}])[0]);
 
 /**
  * Upload a file into the user's draft area via the core "Upload a file" repository

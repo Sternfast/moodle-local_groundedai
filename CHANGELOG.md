@@ -2,6 +2,22 @@
 
 All notable changes to **AI Teacher Assistant** (`local_groundedai`). Dates are ISO (YYYY-MM-DD).
 
+## 1.2.3 — 2026-10-17
+
+Chat continuity and robustness, from a researched audit of session, multi-tab and lifecycle edge cases.
+
+- **Expired-session recovery.** A long-idle tab whose Moodle session has expired now shows a single
+  "session expired — reload" prompt instead of a silently dead chat; a failed send surfaces an error and
+  keeps your drafted text (central web-service error handling in `repository.js`).
+- **Same conversation open in two places.** When you return to a tab, turns another open view (a second
+  tab, or the popup on another page) added are pulled in — a new `after` refresh cursor on `get_messages`,
+  applied on tab-visible — instead of the view going stale until reload.
+- **No more interleaved turns.** Two near-simultaneous sends into one conversation no longer mix: the
+  post-send re-read returns exactly that turn's own two rows.
+- **Empty "New chat" churn.** The cleanup task now sweeps abandoned, message-less conversations (older
+  than an hour), regardless of the retention setting.
+- **Double-open guard.** The floating launcher no longer builds the popup twice on a fast double-click.
+
 ## 1.2.2 — 2026-10-17
 
 Hardening pass from a cross-referenced external-threat review (OWASP Top 10 for LLM Applications 2025,
