@@ -46,12 +46,13 @@ export default class {
      *
      * @param {StateManager} stateManager The state manager.
      */
-    async newConversation(stateManager) {
-        const {contextid, lane} = stateManager.state.static;
-        const result = await Repository.createConversation(lane, contextid);
+    newConversation(stateManager) {
+        // Lazy: a "New chat" is just an empty draft (currentConversationId = 0). The conversation row is
+        // created on the first message, so clicking New chat — or opening the panel — never persists an
+        // empty "New chat" row that then clutters the list.
         stateManager.setReadOnly(false);
         stateManager.state.config.view = 'chats';
-        stateManager.state.config.currentConversationId = parseInt(result.id, 10);
+        stateManager.state.config.currentConversationId = 0;
         stateManager.state.config.listdirty++;
         stateManager.setReadOnly(true);
     }
@@ -123,9 +124,15 @@ export default class {
      */
     async uploadAttachment(stateManager, file) {
         const staticstate = stateManager.state.static;
-        const id = parseInt(stateManager.state.config.currentConversationId, 10);
+        let id = parseInt(stateManager.state.config.currentConversationId, 10);
         if (!id) {
-            return;
+            // Lazy-create so a file attached before any text message still has a conversation to land in.
+            const created = await Repository.createConversation(staticstate.lane, staticstate.contextid);
+            id = parseInt(created.id, 10);
+            stateManager.setReadOnly(false);
+            stateManager.state.config.currentConversationId = id;
+            stateManager.state.config.listdirty++;
+            stateManager.setReadOnly(true);
         }
         // A fresh draft area per upload, so file_save_draft_area_files (maxfiles=1) never re-copies
         // an earlier file when several are attached in one page session.
@@ -184,9 +191,16 @@ export default class {
      * @param {String} text The message.
      */
     async sendMessage(stateManager, text) {
-        const id = parseInt(stateManager.state.config.currentConversationId, 10);
+        let id = parseInt(stateManager.state.config.currentConversationId, 10);
         if (!id) {
-            return;
+            // Lazy-create the conversation on the first message, then send into it.
+            const {contextid, lane} = stateManager.state.static;
+            const created = await Repository.createConversation(lane, contextid);
+            id = parseInt(created.id, 10);
+            stateManager.setReadOnly(false);
+            stateManager.state.config.currentConversationId = id;
+            stateManager.state.config.listdirty++;
+            stateManager.setReadOnly(true);
         }
         const {cmid, pagetype} = stateManager.state.static;
         // Snapshot the cancel token: if it moves while we await, the user hit "stop" and the reply is stale.

@@ -83,13 +83,8 @@ export default class extends BaseComponent {
         this.addEventListener(this.getElement(this.selectors.EXPAND), 'click', () => this._setCollapsed(false));
         this._setCollapsed(this._inPopup ? true : this._readCollapsed());
         this._syncTabs(state.config.view);
-
-        // The popup opens ready to type: start a conversation so the composer is enabled immediately
-        // (the list is an overlay here, so "New chat" isn't on screen). It mounts once per page, so
-        // this creates at most one fresh chat per visit.
-        if (this._inPopup && !parseInt(this.reactive.state.config.currentConversationId, 10)) {
-            this.reactive.dispatch('newConversation');
-        }
+        // The panel opens on an empty draft (currentConversationId = 0): the composer is live and the row
+        // is created only on the first message, so opening the popup never leaves an empty "New chat".
     }
 
     /**

@@ -113,7 +113,7 @@ export default class extends BaseComponent {
     async _submit() {
         const input = this.getElement(this.selectors.INPUT);
         const text = input.value.trim();
-        if (text === '' || this.reactive.state.config.sending || !this.reactive.state.config.currentConversationId) {
+        if (text === '' || this.reactive.state.config.sending) {
             return;
         }
         input.value = '';
@@ -147,9 +147,7 @@ export default class extends BaseComponent {
         if (!file || this._uploading) {
             return;
         }
-        if (!this.reactive.state.config.currentConversationId) {
-            return;
-        }
+        // No currentConversationId guard: uploadAttachment lazily creates the conversation if needed.
         const max = parseInt(this.reactive.state.static.maxbytes, 10);
         if (max && file.size > max) {
             Notification.alert(
@@ -200,7 +198,9 @@ export default class extends BaseComponent {
      */
     _refreshEnabled() {
         const config = this.reactive.state.config;
-        const disabled = config.sending || !config.currentConversationId;
+        // Enabled in the no-conversation "draft" state too: the conversation is created lazily on the
+        // first message (so opening the panel never leaves an empty row), so the composer must accept it.
+        const disabled = Boolean(config.sending);
         const input = this.getElement(this.selectors.INPUT);
         const wasdisabled = input.disabled;
         input.disabled = disabled;
@@ -239,7 +239,7 @@ export default class extends BaseComponent {
         }
         const input = this.getElement(this.selectors.INPUT);
         const hastext = Boolean(input && input.value.trim() !== '');
-        send.disabled = !config.currentConversationId || !hastext;
+        send.disabled = !hastext;
         send.classList.remove('gai-stop');
         send.setAttribute('aria-label', this._labels.send);
         send.setAttribute('title', this._labels.send);
