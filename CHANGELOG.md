@@ -2,6 +2,25 @@
 
 All notable changes to **AI Teacher Assistant** (`local_groundedai`). Dates are ISO (YYYY-MM-DD).
 
+## 1.2.4 — 2026-10-31
+
+Moodle Marketplace review fixes (MMR-455).
+
+### Added
+- **GPLv3 `LICENSE` file** at the plugin root.
+- **Backup and restore** of course-scoped data: a course's staff-assistant conversations, their
+  messages, and attached files are now included in course backup (with user information) and
+  restored into the target course, remapping the course context and owning users.
+- **Continuous integration** (`.github/workflows/ci.yml`) running moodle-plugin-ci, so lint,
+  coding-standard, packaging and validation gate every change.
+
+### Changed / Removed
+- **Removed the development `cli/` scripts** from the distribution. They were ad-hoc test and seed
+  harnesses (the real tests live in `tests/`); dropping them also removes the only non-Frankenstyle
+  global functions (`gai_*`).
+- Supported range stated as 4.5 (LTS) to 5.2, matching what CI tests.
+- The release ZIP is now built with directory entries so Moodle installs it directly.
+
 ## 1.2.3 — 2026-10-17
 
 Chat continuity and robustness, from a researched audit of session, multi-tab and lifecycle edge cases.
