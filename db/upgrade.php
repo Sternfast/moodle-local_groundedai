@@ -281,5 +281,29 @@ function xmldb_local_groundedai_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101602, 'local', 'groundedai');
     }
 
+    if ($oldversion < 2026103100) {
+        // Drop the empty-string DEFAULT from CHAR NOT NULL columns. XMLDB treats '' as an invalid
+        // default for NOT NULL char columns and emits a debugging message on install/upgrade; the
+        // code always sets these fields explicitly, so no default is needed.
+        $targets = [
+            ['local_groundedai_conversations', 'name', '255'],
+            ['local_groundedai_grants', 'domains', '255'],
+            ['local_groundedai_grants', 'features', '255'],
+            ['local_groundedai_attach', 'contenthash', '40'],
+            ['local_groundedai_attach', 'filename', '255'],
+            ['local_groundedai_attach', 'mimetype', '128'],
+            ['local_groundedai_attach', 'type', '10'],
+        ];
+        foreach ($targets as [$tablename, $fieldname, $length]) {
+            $table = new xmldb_table($tablename);
+            $field = new xmldb_field($fieldname, XMLDB_TYPE_CHAR, $length, null, XMLDB_NOTNULL, null, null);
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->change_field_default($table, $field);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026103100, 'local', 'groundedai');
+    }
+
     return true;
 }
