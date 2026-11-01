@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_groundedai';
-$plugin->version   = 2026103100;        // YYYYMMDDXX.
+$plugin->version   = 2026103101;        // YYYYMMDDXX.
 $plugin->requires  = 2024100700;        // Moodle 4.5.0 — the AI subsystem + typed hooks floor.
 $plugin->supported = [405, 502];        // Moodle 4.5 (LTS) to 5.2 (current stable; what CI tests).
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.2.4';           // Review fixes (MMR-455): license, backup/restore, drop dev cli, packaging.
+$plugin->release   = '1.2.5';           // Review fixes (MMR-455): Frankenstyle-prefix governance helpers.

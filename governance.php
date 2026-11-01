@@ -35,10 +35,10 @@ use local_groundedai\local\evidence;
 use local_groundedai\local\policy;
 
 /** @var int How many log rows to show on screen (download the range for the rest). */
-const GAI_LOG_SCREEN_CAP = 50;
+const LOCAL_GROUNDEDAI_LOG_SCREEN_CAP = 50;
 
 /** @var int Hard cap on rows in a CSV export, so it is safe even on a huge log store. */
-const GAI_LOG_CSV_CAP = 10000;
+const LOCAL_GROUNDEDAI_LOG_CSV_CAP = 10000;
 
 $action = optional_param('action', '', PARAM_ALPHA);
 $context = context_system::instance();
@@ -95,12 +95,12 @@ echo html_writer::div(
     'd-flex flex-wrap mb-3',
     ['style' => 'gap:.6rem;']
 );
-echo render_grants_table();
+echo local_groundedai_render_grants_table();
 
 // The recent access log.
 echo $OUTPUT->heading(get_string('gov_recentlog', 'local_groundedai'), 3);
-echo render_log_toolbar($logfromts, $logtots);
-echo render_recent_log($logfromts, $logtots);
+echo local_groundedai_render_log_toolbar($logfromts, $logtots);
+echo local_groundedai_render_recent_log($logfromts, $logtots);
 
 // At the bottom: the standards this maps to (types only) and the downloads.
 echo html_writer::empty_tag('hr', ['style' => 'margin-top:2rem;']);
@@ -149,7 +149,7 @@ echo $OUTPUT->footer();
  *
  * @return string
  */
-function render_grants_table(): string {
+function local_groundedai_render_grants_table(): string {
     global $OUTPUT;
     $rows = access_manager::list_grants();
     if (!$rows) {
@@ -231,7 +231,7 @@ function local_groundedai_log_reader() {
  * @param int $to Range end (unix time).
  * @return string
  */
-function render_log_toolbar(int $from, int $to): string {
+function local_groundedai_render_log_toolbar(int $from, int $to): string {
     $base = new moodle_url('/local/groundedai/governance.php');
     $fromval = date('Y-m-d', $from);
     $toval = date('Y-m-d', $to);
@@ -274,7 +274,7 @@ function render_log_toolbar(int $from, int $to): string {
  * @param int $to Range end (unix time).
  * @return string
  */
-function render_recent_log(int $from, int $to): string {
+function local_groundedai_render_recent_log(int $from, int $to): string {
     $reader = local_groundedai_log_reader();
     if (!$reader) {
         return html_writer::tag('p', get_string('gov_nolog', 'local_groundedai'), ['class' => 'text-muted']);
@@ -282,12 +282,12 @@ function render_recent_log(int $from, int $to): string {
     $select = "component = :component AND timecreated >= :from AND timecreated <= :to";
     $params = ['component' => 'local_groundedai', 'from' => $from, 'to' => $to];
     // Fetch one more than the cap so we can tell the admin there are more to download.
-    $events = $reader->get_events_select($select, $params, 'timecreated DESC', 0, GAI_LOG_SCREEN_CAP + 1);
+    $events = $reader->get_events_select($select, $params, 'timecreated DESC', 0, LOCAL_GROUNDEDAI_LOG_SCREEN_CAP + 1);
     if (!$events) {
         return html_writer::tag('p', get_string('gov_logempty', 'local_groundedai'), ['class' => 'text-muted']);
     }
-    $more = count($events) > GAI_LOG_SCREEN_CAP;
-    $events = array_slice($events, 0, GAI_LOG_SCREEN_CAP);
+    $more = count($events) > LOCAL_GROUNDEDAI_LOG_SCREEN_CAP;
+    $events = array_slice($events, 0, LOCAL_GROUNDEDAI_LOG_SCREEN_CAP);
 
     $head = html_writer::tag(
         'tr',
@@ -306,7 +306,7 @@ function render_recent_log(int $from, int $to): string {
     }
     $table = html_writer::tag('table', $head . $body, ['class' => 'generaltable']);
     $note = $more
-        ? get_string('log_capped', 'local_groundedai', GAI_LOG_SCREEN_CAP)
+        ? get_string('log_capped', 'local_groundedai', LOCAL_GROUNDEDAI_LOG_SCREEN_CAP)
         : get_string('log_showing', 'local_groundedai', count($events));
     return $table . html_writer::tag('p', $note, ['class' => 'text-muted']);
 }
@@ -327,7 +327,7 @@ function local_groundedai_download_log_csv(int $from, int $to): void {
     if ($reader) {
         $select = "component = :component AND timecreated >= :from AND timecreated <= :to";
         $params = ['component' => 'local_groundedai', 'from' => $from, 'to' => $to];
-        $events = $reader->get_events_select($select, $params, 'timecreated DESC', 0, GAI_LOG_CSV_CAP);
+        $events = $reader->get_events_select($select, $params, 'timecreated DESC', 0, LOCAL_GROUNDEDAI_LOG_CSV_CAP);
         foreach ($events as $event) {
             $csv->add_data([
                 userdate($event->timecreated, get_string('strftimedatetimeshort', 'langconfig')),

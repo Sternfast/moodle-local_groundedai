@@ -2,6 +2,16 @@
 
 All notable changes to **AI Teacher Assistant** (`local_groundedai`). Dates are ISO (YYYY-MM-DD).
 
+## 1.2.5 — 2026-10-31
+
+Further Moodle Marketplace review fix (MMR-455).
+
+### Changed
+- **Frankenstyle-prefixed the remaining global symbols** in `governance.php`: the page-render helpers
+  (`render_grants_table`/`render_log_toolbar`/`render_recent_log` → `local_groundedai_*`) and the two
+  file-scope constants (`GAI_LOG_*` → `LOCAL_GROUNDEDAI_LOG_*`), removing the last namespace-collision
+  risk the reviewer flagged.
+
 ## 1.2.4 — 2026-10-31
 
 Moodle Marketplace review fixes (MMR-455).
