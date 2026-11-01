@@ -25,14 +25,10 @@
  * @copyright  2026 Vbounds LLC (Sternfast)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Defines the course-level backup structure for this local plugin.
  */
 class backup_local_groundedai_plugin extends backup_local_plugin {
-
     /**
      * Returns the structure to be processed by this plugin at the course level.
      *

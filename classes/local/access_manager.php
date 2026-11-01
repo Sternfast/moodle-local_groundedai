@@ -345,6 +345,8 @@ class access_manager {
      * @param string $coursescope self::SCOPE_ALL|SCOPE_ENROLLED|SCOPE_COURSE.
      * @param int $courseid The course when scope is SCOPE_COURSE; 0 otherwise.
      * @param int $expiry Absolute unix time the grant expires; 0 = never.
+     * @param array|null $domains Data domains this grant enables; null uses the plugin default set.
+     * @param array $features Sensitive features this grant enables (email, upload, export).
      * @return int The new grant id.
      */
     public static function add_user_grant(

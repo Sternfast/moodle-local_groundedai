@@ -24,14 +24,10 @@
  * @copyright  2026 Vbounds LLC (Sternfast)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Restores the conversations/messages/attachments backed up by backup_local_groundedai_plugin.
  */
 class restore_local_groundedai_plugin extends restore_local_plugin {
-
     /**
      * Define the paths this plugin restores from a course backup.
      *
@@ -40,11 +36,17 @@ class restore_local_groundedai_plugin extends restore_local_plugin {
     protected function define_course_plugin_structure() {
         $paths = [];
         $paths[] = new restore_path_element(
-            'local_groundedai_conversation', $this->get_pathfor('/conversations/conversation'));
+            'local_groundedai_conversation',
+            $this->get_pathfor('/conversations/conversation')
+        );
         $paths[] = new restore_path_element(
-            'local_groundedai_message', $this->get_pathfor('/conversations/conversation/messages/message'));
+            'local_groundedai_message',
+            $this->get_pathfor('/conversations/conversation/messages/message')
+        );
         $paths[] = new restore_path_element(
-            'local_groundedai_attachment', $this->get_pathfor('/conversations/conversation/attachments/attachment'));
+            'local_groundedai_attachment',
+            $this->get_pathfor('/conversations/conversation/attachments/attachment')
+        );
         return $paths;
     }
 
