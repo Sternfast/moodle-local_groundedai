@@ -98,7 +98,7 @@ class provider_facade {
         // Loopback dev endpoints (localhost/127.0.0.1/::1/*.localhost) are exempt.
         $scheme = strtolower((string) parse_url($this->baseurl, PHP_URL_SCHEME));
         $host = strtolower((string) parse_url($this->baseurl, PHP_URL_HOST));
-        $isloopback = in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+        $isloopback = in_array($host, ['localhost', '127.0.0.1', '::1', '[::1]'], true)
             || (substr($host, -10) === '.localhost');
         if ($this->apikey !== '' && $scheme !== 'https' && !$isloopback) {
             throw new \moodle_exception('err_https_required', 'local_groundedai');

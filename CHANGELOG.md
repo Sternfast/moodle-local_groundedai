@@ -17,7 +17,7 @@ Moodle Marketplace review fixes (MMR-455 round 2).
 
 ### Changed
 - Privacy: declare and export the `messages.metadata` column and declare `attach.status`, so the
-  privacy registry and export cover every stored field.
+  privacy registry and export cover the stored fields that hold personal or user-associated data.
 - Provider: re-assert HTTPS before attaching the API key (defence in depth against a non-HTTPS override).
 - Removed seven unused language strings; clarified the rate-limit setting help.
 - CI: added an upgrade-path smoke test (install the last release, upgrade to HEAD, check the schema)
