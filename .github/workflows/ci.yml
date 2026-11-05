@@ -7,3 +7,95 @@ on:
 jobs:
   moodle-plugin-ci:
     uses: Sternfast/moodle-ci/.github/workflows/plugin-ci.yml@main
+
+  # Guard against doc/metadata drift: the README's stated Moodle version range must match
+  # version.php's $plugin->supported. A mismatch here is exactly what the reviewer flagged.
+  docs-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: README matches declared supported versions
+        run: |
+          set -euo pipefail
+          nums=$(grep -oE 'supported[^;]*\[[0-9, ]+\]' version.php | grep -oE '[0-9]+')
+          min=$(echo "$nums" | head -1); max=$(echo "$nums" | tail -1)
+          fmt() { echo "$(( $1 / 100 )).$(( $1 % 100 ))"; }
+          range="$(fmt "$min")–$(fmt "$max")"   # en-dash, matching the README style
+          echo "version.php supported => $range"
+          if ! grep -qF "$range" README.md; then
+            echo "::error::README.md does not state the declared Moodle range '$range' (version.php supported=[$min, $max]). Update README or version.php so they agree."
+            grep -niE 'moodle [0-9]' README.md || true
+            exit 1
+          fi
+          echo "OK: README states $range"
+
+  # Guard against upgrade-only regressions: moodle-plugin-ci only installs fresh, so a broken
+  # upgrade step (e.g. altering an indexed column) is invisible to it. This job installs the
+  # last released tag, then upgrades to HEAD and checks the schema — the path the reviewer runs.
+  upgrade-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DB: pgsql
+      MOODLE_BRANCH: MOODLE_405_STABLE
+    steps:
+      - name: Check out plugin (full history for tags)
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pgsql, gd, zip, intl, mbstring, xml, curl, soap, exif, fileinfo
+          ini-values: max_input_vars=5000
+          coverage: none
+
+      - name: Install moodle-plugin-ci
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$(cd ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
+
+      - name: Resolve last released tag
+        id: tag
+        run: |
+          set -euo pipefail
+          cd plugin
+          LAST=$(git tag --sort=-v:refname --list 'v*' | head -1)
+          if [ -z "$LAST" ]; then echo "No release tag found; skipping."; echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "Last tag: $LAST"
+          echo "last=$LAST" >> "$GITHUB_OUTPUT"
+          git checkout --quiet "$LAST"
+
+      - name: Install Moodle + plugin at the last tag
+        if: steps.tag.outputs.skip != '1'
+        run: moodle-plugin-ci install --db-host=127.0.0.1 --plugin ./plugin
+
+      - name: Swap the plugin to HEAD and upgrade
+        if: steps.tag.outputs.skip != '1'
+        run: |
+          set -euo pipefail
+          git -C plugin checkout --quiet "$GITHUB_SHA"
+          # Mirror HEAD into the installed location (covers both symlink and copy installs).
+          rsync -a --delete --exclude '.git' --exclude '.github' plugin/ moodle/local/groundedai/
+          php moodle/admin/cli/upgrade.php --non-interactive
+          echo "=== schema check (must report no groundedai mismatch) ==="
+          OUT=$(php moodle/admin/cli/check_database_schema.php || true)
+          echo "$OUT"
+          if echo "$OUT" | grep -qi groundedai; then
+            echo "::error::Schema mismatch for local_groundedai after upgrade."
+            exit 1
+          fi
+          echo "OK: upgrade from ${{ steps.tag.outputs.last }} to HEAD clean, schema matches."

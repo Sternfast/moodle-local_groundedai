@@ -57,12 +57,14 @@ class provider implements
         $collection->add_database_table('local_groundedai_messages', [
             'role'        => 'privacy:metadata:messages:role',
             'content'     => 'privacy:metadata:messages:content',
+            'metadata'    => 'privacy:metadata:messages:metadata',
             'timecreated' => 'privacy:metadata:messages:timecreated',
         ], 'privacy:metadata:messages');
 
         $collection->add_database_table('local_groundedai_attach', [
             'userid'      => 'privacy:metadata:attach:userid',
             'filename'    => 'privacy:metadata:attach:filename',
+            'status'      => 'privacy:metadata:attach:status',
             'content'     => 'privacy:metadata:attach:content',
             'timecreated' => 'privacy:metadata:attach:timecreated',
         ], 'privacy:metadata:attach');
@@ -210,7 +212,7 @@ class provider implements
                     'local_groundedai_messages',
                     ['conversationid' => $conv->id],
                     'timecreated ASC',
-                    'id, role, content, timecreated'
+                    'id, role, content, metadata, timecreated'
                 );
                 $data = (object) [
                     'name'         => $conv->name,
@@ -221,6 +223,7 @@ class provider implements
                         return [
                             'role'        => $m->role,
                             'content'     => $m->content,
+                            'metadata'    => $m->metadata,
                             'timecreated' => \core_privacy\local\request\transform::datetime($m->timecreated),
                         ];
                     }, array_values($messages)),

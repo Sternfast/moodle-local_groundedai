@@ -285,20 +285,41 @@ function xmldb_local_groundedai_upgrade($oldversion) {
         // Drop the empty-string DEFAULT from CHAR NOT NULL columns. XMLDB treats '' as an invalid
         // default for NOT NULL char columns and emits a debugging message on install/upgrade; the
         // code always sets these fields explicitly, so no default is needed.
+        //
+        // Each target lists any indexes that cover the column: a field alteration must drop its
+        // covering indexes first and restore them afterwards, or the ALTER fails on the index
+        // (contenthash carries a non-unique index). The other columns are index-free.
         $targets = [
-            ['local_groundedai_conversations', 'name', '255'],
-            ['local_groundedai_grants', 'domains', '255'],
-            ['local_groundedai_grants', 'features', '255'],
-            ['local_groundedai_attach', 'contenthash', '40'],
-            ['local_groundedai_attach', 'filename', '255'],
-            ['local_groundedai_attach', 'mimetype', '128'],
-            ['local_groundedai_attach', 'type', '10'],
+            ['local_groundedai_conversations', 'name', '255', []],
+            ['local_groundedai_grants', 'domains', '255', []],
+            ['local_groundedai_grants', 'features', '255', []],
+            ['local_groundedai_attach', 'contenthash', '40', [['contenthash', XMLDB_INDEX_NOTUNIQUE, ['contenthash']]]],
+            ['local_groundedai_attach', 'filename', '255', []],
+            ['local_groundedai_attach', 'mimetype', '128', []],
+            ['local_groundedai_attach', 'type', '10', []],
         ];
-        foreach ($targets as [$tablename, $fieldname, $length]) {
+        foreach ($targets as [$tablename, $fieldname, $length, $indexes]) {
             $table = new xmldb_table($tablename);
             $field = new xmldb_field($fieldname, XMLDB_TYPE_CHAR, $length, null, XMLDB_NOTNULL, null, null);
-            if ($dbman->field_exists($table, $field)) {
-                $dbman->change_field_default($table, $field);
+            if (!$dbman->field_exists($table, $field)) {
+                continue;
+            }
+            // Drop covering indexes, change the field, then re-create the declared indexes. The
+            // re-create is unconditional (add when missing) rather than restoring only the indexes
+            // this invocation dropped, so a crash between the drop and the re-add cannot leave an
+            // index permanently missing when the step re-runs (the savepoint is only reached below).
+            foreach ($indexes as [$iname, $itype, $icols]) {
+                $index = new xmldb_index($iname, $itype, $icols);
+                if ($dbman->index_exists($table, $index)) {
+                    $dbman->drop_index($table, $index);
+                }
+            }
+            $dbman->change_field_default($table, $field);
+            foreach ($indexes as [$iname, $itype, $icols]) {
+                $index = new xmldb_index($iname, $itype, $icols);
+                if (!$dbman->index_exists($table, $index)) {
+                    $dbman->add_index($table, $index);
+                }
             }
         }
 

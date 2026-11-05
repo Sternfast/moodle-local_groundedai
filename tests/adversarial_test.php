@@ -426,6 +426,17 @@ final class adversarial_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $cid = \local_groundedai\local\conversation::create($admin->id, \context_course::instance($course->id)->id);
 
+        // Seed a known grade so an UPDATE-style mutation (which leaves row counts unchanged) is also
+        // caught — several attacks below try to force finalgrade=100. Seed BEFORE the count snapshot
+        // so the sentinel rows are included and the count assertion still reconciles.
+        global $CFG;
+        require_once($CFG->libdir . '/gradelib.php');
+        $gitem = new \grade_item(['courseid' => $course->id, 'itemtype' => 'manual', 'itemname' => 'Sentinel'], false);
+        $gitem->insert();
+        $ggrade = new \grade_grade(['itemid' => $gitem->id, 'userid' => $admin->id, 'finalgrade' => 42.0], false);
+        $ggrade->insert();
+        $sentinelid = $ggrade->id;
+
         $before = [];
         foreach ($DB->get_tables(false) as $t) {
             $before[$t] = $DB->count_records($t);
@@ -467,6 +478,14 @@ final class adversarial_test extends \advanced_testcase {
                 "hostile tool calls mutated Moodle table '{$t}'"
             );
         }
+
+        // Value-level proof: the seeded grade is still 42, so no UPDATE-style mutation slipped through
+        // under an unchanged row count.
+        $this->assertEquals(
+            42.0,
+            (float) $DB->get_field('grade_grades', 'finalgrade', ['id' => $sentinelid]),
+            'hostile tool calls changed a seeded grade value'
+        );
     }
 
     /**

@@ -1,3 +1,4 @@
-# Dev-only harnesses and seeders must not ship in a release package.
+# Dev-only harnesses, CI config and the gitattributes file must not ship in a release package.
 cli/ export-ignore
+.github/ export-ignore
 .gitattributes export-ignore

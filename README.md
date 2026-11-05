@@ -17,7 +17,7 @@ anywhere that can create, edit, delete, enrol, or grade.
 
 ## Requirements
 
-- Moodle 4.5–5.3 (requires 4.5.0, build 2024100700).
+- Moodle 4.5–5.2 (requires 4.5.0, build 2024100700).
 - An OpenAI-compatible chat-completions endpoint and API key (a hosted provider, or a self-hosted model
   such as Ollama, LM Studio, llama.cpp or vLLM).
 

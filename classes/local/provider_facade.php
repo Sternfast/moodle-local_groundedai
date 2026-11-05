@@ -92,6 +92,18 @@ class provider_facade {
             $payload['tool_choice'] = $opts['tool_choice'] ?? 'auto';
         }
 
+        // Defence in depth: never attach the API key to a non-HTTPS endpoint. The admin setting
+        // validator already enforces this, but a config.php override or a value that predates the
+        // validator could be plain http — fail closed rather than send the key in clear text.
+        // Loopback dev endpoints (localhost/127.0.0.1/::1/*.localhost) are exempt.
+        $scheme = strtolower((string) parse_url($this->baseurl, PHP_URL_SCHEME));
+        $host = strtolower((string) parse_url($this->baseurl, PHP_URL_HOST));
+        $isloopback = in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            || (substr($host, -10) === '.localhost');
+        if ($this->apikey !== '' && $scheme !== 'https' && !$isloopback) {
+            throw new \moodle_exception('err_https_required', 'local_groundedai');
+        }
+
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
         $curl = new \curl();

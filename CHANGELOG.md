@@ -2,6 +2,27 @@
 
 All notable changes to **AI Teacher Assistant** (`local_groundedai`). Dates are ISO (YYYY-MM-DD).
 
+## 1.2.6 — 2026-11-05
+
+Moodle Marketplace review fixes (MMR-455 round 2).
+
+### Fixed
+- **Upgrade no longer fails on the `contenthash` index.** The 2026103100 step dropped the invalid
+  empty-string default from CHAR NOT NULL columns via `change_field_default()`, which Moodle refuses
+  on an indexed column (`ddldependencyerror`). The step now drops the covering index, changes the
+  field, and re-creates the index; the re-create is idempotent so an interrupted upgrade cannot leave
+  the index missing on a re-run. Verified by installing an older release and upgrading.
+- **Added the missing `cachedef_ratelimit` language string** for the rate-limiter cache.
+- **Aligned the README** supported-versions line with `version.php` (Moodle 4.5–5.2).
+
+### Changed
+- Privacy: declare and export the `messages.metadata` column and declare `attach.status`, so the
+  privacy registry and export cover every stored field.
+- Provider: re-assert HTTPS before attaching the API key (defence in depth against a non-HTTPS override).
+- Removed seven unused language strings; clarified the rate-limit setting help.
+- CI: added an upgrade-path smoke test (install the last release, upgrade to HEAD, check the schema)
+  and a README/supported-versions consistency check, so upgrade and doc regressions fail CI.
+
 ## 1.2.5 — 2026-10-31
 
 Further Moodle Marketplace review fix (MMR-455).
