@@ -87,6 +87,17 @@ jobs:
         if: steps.tag.outputs.skip != '1'
         run: moodle-plugin-ci install --db-host=127.0.0.1 --plugin ./plugin
 
+      # moodle-plugin-ci only initialises the PHPUnit/Behat databases; the upgrade path needs a real
+      # installed site, with the plugin at the last released tag.
+      - name: Install the site database at the last tag
+        if: steps.tag.outputs.skip != '1'
+        run: |
+          set -euo pipefail
+          php moodle/admin/cli/install_database.php --agree-license \
+            --adminuser=admin --adminpass='Upgrade-Test-1' --adminemail=admin@example.com \
+            --fullname='Upgrade test' --shortname=upgradetest
+          php moodle/admin/cli/cfg.php --component=local_groundedai --name=version
+
       - name: Swap the plugin to HEAD and upgrade
         if: steps.tag.outputs.skip != '1'
         run: |
