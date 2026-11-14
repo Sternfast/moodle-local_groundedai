@@ -61,7 +61,9 @@ class upload_file extends external_api {
             self::execute_parameters(),
             ['conversationid' => $conversationid, 'draftitemid' => $draftitemid]
         );
-        self::validate_context(conversation::context_for($params['conversationid']));
+        $context = conversation::context_for($params['conversationid']);
+        self::validate_context($context);
+        conversation::require_access($context);
         if (!\local_groundedai\local\access_manager::feature_enabled($USER->id, 'upload')) {
             throw new \moodle_exception('uploaddisabled', 'local_groundedai');
         }

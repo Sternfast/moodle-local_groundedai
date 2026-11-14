@@ -149,9 +149,11 @@ class policy {
                     . "(defer to Moodle), 'enrolled only' (tighten to the grantee's enrolments), or one "
                     . 'specific course. The scope guard runs AFTER Moodle\'s own course-access check, so a '
                     . 'grant can only ever tighten, never grant a course Moodle denies.',
-                'enforced_at' => [$tools . '::gate', $tools . '::scope_blocks',
+                'enforced_at' => [$conv . '::require_access', access_manager::class . '::course_in_scope',
+                    $tools . '::gate', $tools . '::scope_blocks',
                     access_manager::class . '::effective_course_access'],
-                'verified_by' => ['test_enrolled_scope_tightens_to_enrolment', 'test_course_specific_grant_limits_scope'],
+                'verified_by' => ['test_enrolled_scope_tightens_to_enrolment', 'test_course_specific_grant_limits_scope',
+                    'test_require_access_enforces_course_grant', 'test_create_conversation_refused_outside_scope'],
                 'caps'        => [],
                 'required'    => self::A2_TESTED,
                 'achieved'    => self::A2_TESTED,

@@ -67,6 +67,10 @@ class hook_callbacks {
         if (!$coursectx || (int) $coursectx->instanceid === (int) SITEID) {
             return;
         }
+        // Not in a course outside the scope of the viewer's grants.
+        if (!\local_groundedai\local\access_manager::course_in_scope($USER->id, $coursectx)) {
+            return;
+        }
 
         $cmid = isset($PAGE->cm->id) ? (int) $PAGE->cm->id : 0;
         $pagetype = (string) $PAGE->pagetype;

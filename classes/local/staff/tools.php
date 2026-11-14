@@ -697,15 +697,7 @@ class tools {
      * @return array|null An {error} to return, or null if allowed.
      */
     protected static function scope_blocks(\context $context, int $userid): ?array {
-        $eff = access_manager::effective_course_access($userid);
-        if ($eff['all']) {
-            return null;
-        }
-        $courseid = (int) $context->instanceid;
-        if ($eff['enrolled'] && is_enrolled($context, $userid)) {
-            return null;
-        }
-        if (in_array($courseid, $eff['courseids'], true)) {
+        if (access_manager::course_in_scope($userid, $context)) {
             return null;
         }
         return ['error' => get_string('scope_blocked', 'local_groundedai')];

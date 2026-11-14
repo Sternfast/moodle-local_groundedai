@@ -37,7 +37,7 @@ final class policy_manifest_test extends \advanced_testcase {
     private const TESTCLASSES = [
         readtools_test::class, tools_test::class, conversation_test::class, access_manager_test::class,
         privacy_provider_test::class, staff_assistant_test::class, extractor_test::class, adversarial_test::class,
-        auditlog_test::class,
+        auditlog_test::class, entry_scope_test::class,
     ];
 
     /**

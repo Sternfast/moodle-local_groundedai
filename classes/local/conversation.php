@@ -35,7 +35,8 @@ class conversation {
     private const LANE = 'staff';
 
     /**
-     * Check the acting user may open the staff assistant (the kill switch + the access rules).
+     * Check the acting user may open the staff assistant in this context: the kill switch, the access
+     * rules, and the course scope of their grants.
      *
      * @param \context $context The context the chat belongs to.
      */
@@ -48,6 +49,10 @@ class conversation {
         access_manager::assert_no_forbidden_access();
         if (!access_manager::can_use($USER->id)) {
             throw new \moodle_exception('noaccess', 'local_groundedai');
+        }
+        // A grant limited to enrolled courses or one course does not open the assistant anywhere else.
+        if (!access_manager::course_in_scope($USER->id, $context->get_course_context(false) ?: null)) {
+            throw new \moodle_exception('scope_blocked', 'local_groundedai');
         }
     }
 

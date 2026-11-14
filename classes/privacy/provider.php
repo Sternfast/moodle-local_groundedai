@@ -82,10 +82,24 @@ class provider implements
             'usermodified' => 'privacy:metadata:grants:usermodified',
         ], 'privacy:metadata:grants');
 
-        // Data leaving Moodle.
+        // Attached files and exported files are stored through the File API.
+        $collection->add_subsystem_link('core_files', [], 'privacy:metadata:core_files');
+
+        // Data leaving Moodle: the question, the conversation so far, and the results of the read-only
+        // look-ups the assistant ran to answer it (staff\tools holds the look-ups themselves).
         $collection->add_external_location_link('modelprovider', [
-            'question' => 'privacy:metadata:modelprovider:question',
-            'content'  => 'privacy:metadata:modelprovider:content',
+            'question'      => 'privacy:metadata:modelprovider:question',
+            'history'       => 'privacy:metadata:modelprovider:history',
+            'preferences'   => 'privacy:metadata:modelprovider:preferences',
+            'coursecontent' => 'privacy:metadata:modelprovider:coursecontent',
+            'participants'  => 'privacy:metadata:modelprovider:participants',
+            'email'         => 'privacy:metadata:modelprovider:email',
+            'grades'        => 'privacy:metadata:modelprovider:grades',
+            'completion'    => 'privacy:metadata:modelprovider:completion',
+            'activitylog'   => 'privacy:metadata:modelprovider:activitylog',
+            'forumposts'    => 'privacy:metadata:modelprovider:forumposts',
+            'quizcontent'   => 'privacy:metadata:modelprovider:quizcontent',
+            'attachments'   => 'privacy:metadata:modelprovider:attachments',
         ], 'privacy:metadata:modelprovider');
 
         $collection->add_external_location_link('otlpendpoint', [
@@ -152,13 +166,15 @@ class provider implements
             ['userid' => $userid]
         );
 
-        // A user grant naming this user is site-wide: attribute it to the system context.
+        // Grants are site-wide, so they belong to the system context: a user grant naming this user,
+        // and any grant this user created or last edited.
         $contextlist->add_from_sql(
             "SELECT ctx.id
                FROM {context} ctx
-               JOIN {local_groundedai_grants} g ON g.userid = :userid AND g.granteetype = :gtype
+               JOIN {local_groundedai_grants} g
+                    ON (g.userid = :userid AND g.granteetype = :gtype) OR g.usermodified = :editor
               WHERE ctx.contextlevel = :syslevel",
-            ['userid' => $userid, 'gtype' => 'user', 'syslevel' => CONTEXT_SYSTEM]
+            ['userid' => $userid, 'gtype' => 'user', 'editor' => $userid, 'syslevel' => CONTEXT_SYSTEM]
         );
 
         return $contextlist;
@@ -188,6 +204,11 @@ class provider implements
                 'userid',
                 "SELECT userid FROM {local_groundedai_grants} WHERE granteetype = :gtype",
                 ['gtype' => 'user']
+            );
+            $userlist->add_from_sql(
+                'usermodified',
+                "SELECT usermodified FROM {local_groundedai_grants} WHERE usermodified > 0",
+                []
             );
         }
     }
@@ -273,6 +294,25 @@ class provider implements
                         (object) ['grants' => $rows]
                     );
                 }
+
+                // Grants this user created or last edited (they are recorded as the editing administrator).
+                $edited = $DB->get_records('local_groundedai_grants', ['usermodified' => $userid], 'timecreated ASC');
+                if ($edited) {
+                    $rows = array_map(static function ($g) {
+                        return [
+                            'granteetype'  => $g->granteetype,
+                            'coursescope'  => $g->coursescope,
+                            'courseid'     => (int) $g->courseid,
+                            'timecreated'  => \core_privacy\local\request\transform::datetime($g->timecreated),
+                            'timemodified' => \core_privacy\local\request\transform::datetime($g->timemodified),
+                        ];
+                    }, array_values($edited));
+                    writer::with_context($context)->export_data(
+                        [get_string('pluginname', 'local_groundedai'),
+                            get_string('privacy:grantsedited', 'local_groundedai')],
+                        (object) ['grants' => $rows]
+                    );
+                }
             }
         }
     }
@@ -294,6 +334,8 @@ class provider implements
         if ($context instanceof \context_system) {
             // User grants hold a user id; role grants carry no personal data and survive.
             $DB->delete_records('local_groundedai_grants', ['granteetype' => 'user']);
+            // The surviving role grants keep working; only the record of who edited them is removed.
+            $DB->set_field_select('local_groundedai_grants', 'usermodified', 0, 'usermodified > 0');
         }
     }
 
@@ -323,6 +365,8 @@ class provider implements
 
             if ($context instanceof \context_system) {
                 $DB->delete_records('local_groundedai_grants', ['userid' => $userid, 'granteetype' => 'user']);
+                // Grants this user edited stay in force for their grantees; only the editor id is removed.
+                $DB->set_field('local_groundedai_grants', 'usermodified', 0, ['usermodified' => $userid]);
             }
         }
     }
@@ -362,6 +406,7 @@ class provider implements
                 "granteetype = :gtype AND userid $insql",
                 $params + ['gtype' => 'user']
             );
+            $DB->set_field_select('local_groundedai_grants', 'usermodified', 0, "usermodified $insql", $params);
         }
     }
 

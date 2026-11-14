@@ -193,6 +193,29 @@ class access_manager {
     }
 
     /**
+     * Is this course inside the user's granted course scope? The one definition of "in scope", used both
+     * where a conversation is opened or created and by the data tools. Tightening only: callers run
+     * Moodle's own course-access check first, so this can never reach a course Moodle denies.
+     *
+     * @param int $userid The user.
+     * @param \context|null $coursecontext The course context, or null when there is no course.
+     * @return bool
+     */
+    public static function course_in_scope(int $userid, ?\context $coursecontext): bool {
+        $eff = self::effective_course_access($userid);
+        if ($eff['all']) {
+            return true;
+        }
+        if (!$coursecontext || (int) $coursecontext->contextlevel !== CONTEXT_COURSE) {
+            return false;
+        }
+        if ($eff['enrolled'] && is_enrolled($coursecontext, $userid)) {
+            return true;
+        }
+        return in_array((int) $coursecontext->instanceid, $eff['courseids'], true);
+    }
+
+    /**
      * The data domains the user may reach — the union of their active grants' domains. Admins get all.
      *
      * @param int $userid The user.

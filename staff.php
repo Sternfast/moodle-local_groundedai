@@ -38,6 +38,9 @@ if (!get_config('local_groundedai', 'enablestaff')) {
 if (!access_manager::can_use($USER->id)) {
     throw new moodle_exception('noaccess', 'local_groundedai');
 }
+if (!access_manager::course_in_scope($USER->id, $context)) {
+    throw new moodle_exception('scope_blocked', 'local_groundedai');
+}
 
 $PAGE->set_url(new moodle_url('/local/groundedai/staff.php', ['id' => $courseid]));
 $PAGE->set_context($context);

@@ -35,6 +35,7 @@ function local_groundedai_extend_navigation_course($navigation, $course, $contex
     if (
         get_config('local_groundedai', 'enablestaff')
             && \local_groundedai\local\access_manager::can_use($USER->id)
+            && \local_groundedai\local\access_manager::course_in_scope($USER->id, $context)
     ) {
         $navigation->add(
             get_string('openstaffassistant', 'local_groundedai'),

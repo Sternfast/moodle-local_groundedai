@@ -51,7 +51,9 @@ AI Teacher Assistant** — split across two pages.
 
 - **Access grants** — grant access by **role** or by **person**, the way an AWS security group lists
   rules. Each grant has a **course scope** (all courses / the grantee's enrolled courses / specific
-  courses) and an optional **expiry** (never / a date / a number of days). Access is a strict
+  courses) and an optional **expiry** (never / a date / a number of days). The scope decides where
+  the assistant opens at all — outside it there is no launcher and no conversation — as well as
+  which courses its look-ups can read. Access is a strict
   allowlist — there is no block list; site administrators always have access; students never do.
 - **Per-grant data domains** — each grant chooses which kinds of data it may surface (courses, grades,
   participants, dates, progress, how-to action links). Domains are **on by default** for a new grant;
@@ -66,11 +68,19 @@ AI Teacher Assistant** — split across two pages.
 
 ## Privacy and data handling
 
-- **What leaves Moodle:** the staff member's question and the read-tool results are sent to the
-  LLM endpoint you configured. Optional usage metadata goes to the OTLP endpoint if you set one.
+- **What leaves Moodle:** the staff member's question, the earlier messages of that conversation, and
+  the results of the read-only look-ups the assistant ran are sent to the LLM endpoint you configured.
+  Depending on the data domains a grant enables, those results can include **personal data about
+  course participants**: names, roles, groups and enrolment details; grades, feedback, submission
+  status and quiz results; completion progress and activity counts; forum posts with their authors;
+  quiz questions; the text of files the staff member attached; and email addresses only if a grant
+  switches the email feature on. Nothing beyond what that staff member may already see in Moodle,
+  and nothing from a course outside their grant, is sent. Optional usage metadata goes to the OTLP
+  endpoint if you set one. The full list is in the plugin privacy registry
+  (*Site administration → Users → Privacy and policies → Plugin privacy registry*).
 - **What is stored:** conversations and messages (and any files a staff member attaches to a chat),
-  fully covered by Moodle's Privacy (GDPR) subsystem — inventory, export, and erasure are supported,
-  and the external destinations are declared.
+  covered by Moodle's Privacy (GDPR) subsystem — inventory, export, and erasure are supported,
+  and the external destinations are declared. Conversations are removed when their course is deleted.
 - **Minimisation:** no contact PII (such as email) is pulled unless a grant opts in; result sets are
   capped; the access log and audit events record ids only.
 

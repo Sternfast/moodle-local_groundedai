@@ -74,6 +74,10 @@ class staff_assistant {
             self::log_denied($context, $userid, 'not_allowed');
             throw new \moodle_exception('noaccess', 'local_groundedai');
         }
+        if (!access_manager::course_in_scope($userid, $context)) {
+            self::log_denied($context, $userid, 'out_of_scope');
+            throw new \moodle_exception('scope_blocked', 'local_groundedai');
+        }
         // Accountability trail: record WHO used the assistant, WHEN and in WHICH course. No prompt or
         // response content is logged — that stays out of the log by the telemetry-metadata-only policy.
         \local_groundedai\event\assistant_queried::create([
@@ -218,7 +222,7 @@ class staff_assistant {
      *
      * @param \context $context The course (or system) context.
      * @param int $userid The acting user.
-     * @param string $reason 'forbidden_role_halt' | 'not_allowed'.
+     * @param string $reason 'forbidden_role_halt' | 'not_allowed' | 'out_of_scope'.
      */
     private static function log_denied(\context $context, int $userid, string $reason): void {
         try {
