@@ -74,8 +74,8 @@ AI Teacher Assistant** — split across two pages.
   course participants**: names, roles, groups and enrolment details; grades, feedback, submission
   status and quiz results; completion progress and activity counts; forum posts with their authors;
   quiz questions; the text of files the staff member attached; and email addresses only if a grant
-  switches the email feature on. Nothing beyond what that staff member may already see in Moodle,
-  and nothing from a course outside their grant, is sent. Optional usage metadata goes to the OTLP
+  switches the email feature on. Each look-up checks the staff member's own Moodle permissions in
+  that course, and look-ups are refused for courses outside their grant. Optional usage metadata goes to the OTLP
   endpoint if you set one. The full list is in the plugin privacy registry
   (*Site administration → Users → Privacy and policies → Plugin privacy registry*).
 - **What is stored:** conversations and messages (and any files a staff member attaches to a chat),

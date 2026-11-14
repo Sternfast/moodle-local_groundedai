@@ -282,6 +282,8 @@ class provider implements
                         return [
                             'coursescope'  => $g->coursescope,
                             'courseid'     => (int) $g->courseid,
+                            'domains'      => (string) $g->domains,
+                            'features'     => (string) $g->features,
                             'expiry'       => (int) $g->expiry
                                 ? \core_privacy\local\request\transform::datetime($g->expiry) : 'never',
                             'timecreated'  => \core_privacy\local\request\transform::datetime($g->timecreated),
@@ -303,6 +305,10 @@ class provider implements
                             'granteetype'  => $g->granteetype,
                             'coursescope'  => $g->coursescope,
                             'courseid'     => (int) $g->courseid,
+                            'domains'      => (string) $g->domains,
+                            'features'     => (string) $g->features,
+                            'expiry'       => (int) $g->expiry
+                                ? \core_privacy\local\request\transform::datetime($g->expiry) : 'never',
                             'timecreated'  => \core_privacy\local\request\transform::datetime($g->timecreated),
                             'timemodified' => \core_privacy\local\request\transform::datetime($g->timemodified),
                         ];

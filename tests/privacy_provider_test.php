@@ -70,11 +70,12 @@ final class privacy_provider_test extends \core_privacy\tests\provider_testcase 
     }
 
     /**
-     * Every kind of data the assistant can send to the model provider is declared. The map below ties
-     * each data domain and sensitive feature a grant can enable to the declared fields covering what
-     * its look-ups return; a new domain or feature fails here until its data is declared too.
+     * Every look-up tool states which declared kinds of data its results send to the model provider.
+     * The tool list is read from the live tool set, so a tool added later fails here until it is mapped
+     * to declared fields (or explicitly to none).
      */
-    public function test_model_provider_declaration_covers_every_domain_and_feature(): void {
+    public function test_every_tool_maps_to_declared_model_provider_fields(): void {
+        $this->resetAfterTest();
         $declared = $this->modelprovider_fields();
 
         // Sent on every question, whatever the grant enables.
@@ -82,22 +83,52 @@ final class privacy_provider_test extends \core_privacy\tests\provider_testcase 
             $this->assertContains($always, $declared);
         }
 
-        $covers = [
-            'courses'      => ['coursecontent', 'forumposts', 'quizcontent'],
-            'grades'       => ['grades'],
-            'participants' => ['participants', 'activitylog'],
-            'dates'        => ['coursecontent'],
-            'progress'     => ['completion'],
-            'actions'      => [], // Links to Moodle pages only: no personal data.
-            'email'        => ['email'],
-            'upload'       => ['attachments'],
-            'export'       => [], // Writes a file inside Moodle: nothing extra leaves the site.
+        $sends = [
+            'find'                       => ['participants', 'email', 'coursecontent'],
+            'get_course_contents'        => ['coursecontent'],
+            'read_material'              => ['coursecontent'],
+            'get_course_info'            => ['coursecontent'],
+            'get_announcements'          => ['forumposts'],
+            'get_upcoming'               => ['coursecontent'],
+            'get_activity_settings'      => ['coursecontent'],
+            'get_gradebook_structure'    => ['coursecontent'],
+            'get_grading_queue'          => ['coursecontent'],
+            'get_grades'                 => ['grades'],
+            'get_grade_detail'           => ['grades'],
+            'get_grade_overview'         => ['grades', 'participants'],
+            'get_assignment_status'      => ['grades', 'participants'],
+            'get_quiz_attempt_analytics' => ['grades', 'participants'],
+            'get_quiz_questions'         => ['quizcontent'],
+            'get_forum_activity'         => ['forumposts', 'participants'],
+            'get_forum_posts'            => ['forumposts'],
+            'get_enrolment_info'         => ['participants', 'activitylog'],
+            'get_student_groups'         => ['participants'],
+            'get_student_overview'       => ['participants', 'grades', 'completion', 'activitylog'],
+            'get_activity_log'           => ['activitylog'],
+            'get_completion_overview'    => ['completion', 'activitylog', 'participants'],
+            'list_attachments'           => ['attachments'],
+            'read_attachment'            => ['attachments'],
+            'export_table'               => [], // Writes a file inside Moodle from data already in the conversation.
+            'export_document'            => [], // As above.
+            'get_action_link'            => [], // Returns links to Moodle pages only.
         ];
-        foreach (array_merge(access_manager::DOMAINS, access_manager::FEATURES) as $switch) {
-            $this->assertArrayHasKey($switch, $covers, "declare what '{$switch}' sends to the model provider");
-            foreach ($covers[$switch] as $field) {
-                $this->assertContains($field, $declared, "'{$switch}' data must be declared as '{$field}'");
+
+        // The live tool set, with every domain and feature on (a site administrator has them all).
+        $names = [];
+        foreach (\local_groundedai\local\staff\tools::schemas(1, (int) get_admin()->id) as $schema) {
+            $names[] = $schema['function']['name'];
+        }
+        $this->assertNotEmpty($names);
+        foreach ($names as $name) {
+            $this->assertArrayHasKey($name, $sends, "state which declared data the '{$name}' tool sends");
+            foreach ($sends[$name] as $field) {
+                $this->assertContains($field, $declared, "'{$name}' sends '{$field}', which must be declared");
             }
+        }
+        // Nothing is declared that no tool (and no always-sent part) accounts for.
+        $accounted = array_merge(['question', 'history', 'preferences'], ...array_values($sends));
+        foreach ($declared as $field) {
+            $this->assertContains($field, $accounted, "declared field '{$field}' is sent by nothing");
         }
 
         // Every declared field has a real description.

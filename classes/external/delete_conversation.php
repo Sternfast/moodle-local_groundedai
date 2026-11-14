@@ -54,6 +54,8 @@ class delete_conversation extends external_api {
     public static function execute(int $id): array {
         global $USER;
         $params = self::validate_parameters(self::execute_parameters(), ['id' => $id]);
+        // Deliberately not behind require_access(): a user may always remove their own conversation,
+        // including after their access was narrowed or withdrawn.
         self::validate_context(conversation::context_for($params['id']));
         conversation::delete($params['id'], $USER->id);
         return ['status' => true];

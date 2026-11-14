@@ -132,6 +132,13 @@ function local_groundedai_pluginfile($course, $cm, $context, $filearea, $args, $
         return false;
     }
     require_capability('local/groundedai:export', $context);
+    // The same rules as opening the conversation: the assistant must still be available to this user
+    // in this course.
+    try {
+        \local_groundedai\local\conversation::require_access($context);
+    } catch (\moodle_exception $e) {
+        return false;
+    }
 
     $file = get_file_storage()->get_file(
         $context->id,

@@ -224,7 +224,7 @@ class staff_assistant {
      * @param int $userid The acting user.
      * @param string $reason 'forbidden_role_halt' | 'not_allowed' | 'out_of_scope'.
      */
-    private static function log_denied(\context $context, int $userid, string $reason): void {
+    public static function log_denied(\context $context, int $userid, string $reason): void {
         try {
             \local_groundedai\event\access_denied::create([
                 'context'  => $context,

@@ -60,6 +60,8 @@ class delete_attachment extends external_api {
             self::execute_parameters(),
             ['conversationid' => $conversationid, 'attachmentid' => $attachmentid]
         );
+        // Deliberately not behind require_access(): a user may always remove their own attachment,
+        // including after their access was narrowed or withdrawn.
         self::validate_context(conversation::context_for($params['conversationid']));
         attachment_manager::delete($params['attachmentid'], $USER->id);
         return ['status' => true];

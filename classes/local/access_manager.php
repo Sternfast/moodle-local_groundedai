@@ -202,6 +202,9 @@ class access_manager {
      * @return bool
      */
     public static function course_in_scope(int $userid, ?\context $coursecontext): bool {
+        if (!self::can_use($userid)) {
+            return false;
+        }
         $eff = self::effective_course_access($userid);
         if ($eff['all']) {
             return true;
@@ -209,7 +212,11 @@ class access_manager {
         if (!$coursecontext || (int) $coursecontext->contextlevel !== CONTEXT_COURSE) {
             return false;
         }
-        if ($eff['enrolled'] && is_enrolled($coursecontext, $userid)) {
+        // Everyone counts as enrolled in the site front page, so a limited grant never covers it.
+        if ((int) $coursecontext->instanceid === (int) SITEID) {
+            return false;
+        }
+        if ($eff['enrolled'] && is_enrolled($coursecontext, $userid, '', true)) {
             return true;
         }
         return in_array((int) $coursecontext->instanceid, $eff['courseids'], true);

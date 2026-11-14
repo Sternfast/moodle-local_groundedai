@@ -831,7 +831,8 @@ class tools {
             $restrict = self::group_restricted_userids($courseid, $context, $userid);
             // The id and the name fields fullname() needs. Email is added ONLY when a grant enables the
             // email feature for this user; by default no contact PII is pulled into memory.
-            $withemail = access_manager::feature_enabled($userid, 'email');
+            $withemail = access_manager::feature_enabled($userid, 'email')
+                && has_capability('moodle/site:viewuseridentity', $context, $userid);
             $fields = 'u.id, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic, '
                 . 'u.middlename, u.alternatename';
             if ($withemail) {
@@ -1355,7 +1356,20 @@ class tools {
         if (!has_capability('mod/assign:grade', $context, $userid)) {
             return ['error' => 'you may not view submissions for this assignment'];
         }
-        $assign = $DB->get_record('assign', ['id' => $cm->instance], 'id, name, duedate', MUST_EXIST);
+        $assign = $DB->get_record(
+            'assign',
+            ['id' => $cm->instance],
+            'id, name, duedate, blindmarking, revealidentities',
+            MUST_EXIST
+        );
+        // Anonymous marking: while identities are hidden, only those Moodle lets see them may list
+        // submissions by learner.
+        if (
+            (int) $assign->blindmarking && !(int) $assign->revealidentities
+                && !has_capability('mod/assign:viewblinddetails', $context, $userid)
+        ) {
+            return ['error' => 'this assignment uses anonymous marking, so learner identities are hidden'];
+        }
         $target = (int) ($args['userid'] ?? 0);
         $restrict = self::group_restricted_userids($courseid, $context, $userid);
 
@@ -1898,6 +1912,10 @@ class tools {
         );
         if (isset($gate['error'])) {
             return $gate;
+        }
+        // Enrolment methods, dates and status are what Moodle shows on its enrolment review screens.
+        if (!has_capability('moodle/course:enrolreview', $gate['context'], $userid)) {
+            return ['error' => 'you do not have permission to review enrolments in this course'];
         }
         $courseid = (int) $gate['course']->id;
         $restrict = self::group_restricted_userids($courseid, $gate['context'], $userid);

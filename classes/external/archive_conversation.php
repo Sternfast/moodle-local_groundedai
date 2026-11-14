@@ -56,7 +56,9 @@ class archive_conversation extends external_api {
     public static function execute(int $id, bool $archived): array {
         global $USER;
         $params = self::validate_parameters(self::execute_parameters(), ['id' => $id, 'archived' => $archived]);
-        self::validate_context(conversation::context_for($params['id']));
+        $context = conversation::context_for($params['id']);
+        self::validate_context($context);
+        conversation::require_access($context);
         conversation::set_archived($params['id'], $USER->id, $params['archived']);
         return ['status' => true];
     }

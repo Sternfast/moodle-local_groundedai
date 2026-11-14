@@ -56,7 +56,9 @@ class rename_conversation extends external_api {
     public static function execute(int $id, string $name): array {
         global $USER;
         $params = self::validate_parameters(self::execute_parameters(), ['id' => $id, 'name' => $name]);
-        self::validate_context(conversation::context_for($params['id']));
+        $context = conversation::context_for($params['id']);
+        self::validate_context($context);
+        conversation::require_access($context);
         conversation::rename($params['id'], $USER->id, $params['name']);
         return ['status' => true];
     }

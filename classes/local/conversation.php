@@ -48,10 +48,12 @@ class conversation {
         // Hard safety invariant: halt outright if the allow-list ever contains a student/guest role.
         access_manager::assert_no_forbidden_access();
         if (!access_manager::can_use($USER->id)) {
+            staff_assistant::log_denied($context, (int) $USER->id, 'not_allowed');
             throw new \moodle_exception('noaccess', 'local_groundedai');
         }
         // A grant limited to enrolled courses or one course does not open the assistant anywhere else.
         if (!access_manager::course_in_scope($USER->id, $context->get_course_context(false) ?: null)) {
+            staff_assistant::log_denied($context, (int) $USER->id, 'out_of_scope');
             throw new \moodle_exception('scope_blocked', 'local_groundedai');
         }
     }

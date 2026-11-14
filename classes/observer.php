@@ -45,8 +45,8 @@ class observer {
         $params = ['contextid' => (int) $event->contextid];
 
         $convids = $DB->get_fieldset_select('local_groundedai_conversations', 'id', $gone, $params);
-        if ($convids) {
-            [$insql, $inparams] = $DB->get_in_or_equal($convids, SQL_PARAMS_NAMED, 'c');
+        foreach (array_chunk($convids, 1000) as $chunk) {
+            [$insql, $inparams] = $DB->get_in_or_equal($chunk, SQL_PARAMS_NAMED, 'c');
             $DB->delete_records_select('local_groundedai_messages', "conversationid $insql", $inparams);
             $DB->delete_records_select('local_groundedai_attach', "conversationid $insql", $inparams);
             $DB->delete_records_select('local_groundedai_conversations', "id $insql", $inparams);

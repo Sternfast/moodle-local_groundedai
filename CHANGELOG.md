@@ -13,8 +13,11 @@ Moodle Marketplace review fixes (MMR-455, third round).
   forum posts, quiz content, attachments, conversation history, email when enabled), and the README
   matches it.
 - **A grant's course scope is enforced where a conversation is opened or created**, not only inside
-  the data look-ups: the full page, the course navigation link, the launcher, every conversation web
-  service and the upload endpoints. Outside the scope the assistant does not open.
+  the data look-ups: the full page, the course navigation link, the launcher, the web services that
+  open, list, create, rename, archive or send to a conversation, the upload endpoints and export
+  downloads. Outside the scope the assistant does not open. A limited grant never covers the site
+  front page, and only an active enrolment counts for an "enrolled courses" grant. Deleting your own
+  conversation or attachment stays possible after access is narrowed or withdrawn.
 - **The administrator recorded on a grant (`usermodified`) is exported and erased** by the privacy
   provider. Erasure clears the editor id and leaves the grant itself in force for its grantee.
 
@@ -22,7 +25,10 @@ Moodle Marketplace review fixes (MMR-455, third round).
 - Conversations, messages and attachment records are removed when their course is deleted, so no
   personal data is left where the privacy subsystem cannot reach it.
 - The privacy registry names the Moodle file system as the store for attached and exported files.
-- Tests that fail if a new data domain or feature is added without declaring what it sends.
+- Refusals at the entry points are recorded in the access log.
+- The assignment look-up respects anonymous marking, the enrolment look-up requires the enrolment
+  review permission, and email addresses also require permission to see user identity fields.
+- A test that fails when a look-up tool is added without stating which declared kind of data it sends.
 
 ## 1.2.6 — 2026-11-05
 
